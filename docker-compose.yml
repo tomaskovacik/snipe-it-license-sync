@@ -1,0 +1,7 @@
+services:
+  snipe-it-integration:
+    build: .
+    env_file:
+      - .env
+    volumes:
+      - ./out:/data

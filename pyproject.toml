@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "snipe-it-integration"
+version = "0.1.0"
+description = "Sync Microsoft 365, Atlassian, Bitbucket, and Slack license assignments to Snipe-IT."
+requires-python = ">=3.10"
+dependencies = [
+  "msal>=1.28.0",
+  "requests>=2.32.0",
+  "python-dotenv>=1.0.0",
+]
+
+[tool.setuptools]
+py-modules = ["microsoft_licenses", "atlassian_licenses", "slack_licenses", "bitbucket_licenses", "snipe_it_sync", "exit_codes"]
