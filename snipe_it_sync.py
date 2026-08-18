@@ -28,6 +28,7 @@ import requests
 from dotenv import load_dotenv
 
 from exit_codes import EXIT_CRITICAL, EXIT_OK, EXIT_UNKNOWN, EXIT_WARNING
+from quiet import is_quiet
 
 load_dotenv()
 
@@ -250,7 +251,8 @@ def build_diff(client: SnipeITClient) -> list[LicenseDiff]:
             print(f"  WARNING: Snipe-IT has no license named '{license_name}'")
             continue
 
-        print(f"  Fetching seats for '{license_name}'...")
+        if not is_quiet():
+            print(f"  Fetching seats for '{license_name}'...")
         current_holders, free_seat_ids = fetch_license_seats(client, license_id)
 
         diffs.append(

@@ -21,6 +21,8 @@ from dataclasses import dataclass, field
 import requests
 from dotenv import load_dotenv
 
+from quiet import is_quiet
+
 load_dotenv()
 
 SLACK_API_BASE = "https://slack.com/api"
@@ -116,10 +118,11 @@ def main() -> None:
     users = fetch_licensed_users(client)
     print(f"\nFound {len(users)} active users\n")
 
-    for u in sorted(users, key=lambda x: x.email):
-        print(f"{u.email}  ({u.display_name})")
-        for lic in u.licenses:
-            print(f"  - {lic}")
+    if not is_quiet():
+        for u in sorted(users, key=lambda x: x.email):
+            print(f"{u.email}  ({u.display_name})")
+            for lic in u.licenses:
+                print(f"  - {lic}")
 
     output = [
         {

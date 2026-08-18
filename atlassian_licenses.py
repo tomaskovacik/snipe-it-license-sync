@@ -19,6 +19,8 @@ from dataclasses import dataclass, field
 import requests
 from dotenv import load_dotenv
 
+from quiet import is_quiet
+
 load_dotenv()
 
 # Jira masks emailAddress entirely for some external/guest accounts (not
@@ -182,12 +184,14 @@ def fetch_licensed_users(client: JiraClient) -> list[LicensedUser]:
     for product_key, group_names in product_groups.items():
         product_account_ids: set[str] = set()
         for group_name in group_names:
-            print(f"  Fetching group '{group_name}' for {product_key}...")
+            if not is_quiet():
+                print(f"  Fetching group '{group_name}' for {product_key}...")
             members = client.get_all_pages(
                 "group/member",
                 params={"groupname": group_name, "includeInactiveUsers": "false"},
             )
-            print(f"    {len(members)} members")
+            if not is_quiet():
+                print(f"    {len(members)} members")
 
             for m in members:
                 if m.get("accountType") != "atlassian" or not m.get("active", True):
@@ -230,10 +234,11 @@ def main() -> None:
     users = fetch_licensed_users(client)
     print(f"\nFound {len(users)} users with at least one product license\n")
 
-    for u in sorted(users, key=lambda x: x.email):
-        print(f"{u.email}  ({u.display_name})")
-        for p in sorted(u.products):
-            print(f"  - {p}")
+    if not is_quiet():
+        for u in sorted(users, key=lambda x: x.email):
+            print(f"{u.email}  ({u.display_name})")
+            for p in sorted(u.products):
+                print(f"  - {p}")
 
     output = [
         {

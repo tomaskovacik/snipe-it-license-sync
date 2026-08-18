@@ -215,6 +215,8 @@ All four use **email address** as the common key for matching users across syste
 
 The last line of stdout is a short status line (`OK: ...` / `WARNING: ...` / `CRITICAL: ...` / `UNKNOWN: ...`) suitable as the check's summary output. Run it with `SNIPE_IT_DRY_RUN=true` (the default) for monitoring — it only ever reports drift, never mutates Snipe-IT.
 
+For a monitoring run, also set `QUIET=true` — it suppresses the per-user listing each fetch script prints (potentially hundreds of lines), keeping just summary counts, the diff, and the final status line.
+
 ### Example output
 
 ```

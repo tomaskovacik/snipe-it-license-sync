@@ -30,6 +30,8 @@ from dataclasses import dataclass, field
 import requests
 from dotenv import load_dotenv
 
+from quiet import is_quiet
+
 load_dotenv()
 
 BITBUCKET_API_BASE = "https://api.bitbucket.org/2.0"
@@ -159,10 +161,11 @@ def main() -> None:
     users = fetch_licensed_users(client, workspace, resolver)
     print(f"\nFound {len(users)} workspace members\n")
 
-    for u in sorted(users, key=lambda x: x.email):
-        print(f"{u.email or '(no email)'}  ({u.display_name})")
-        for lic in u.licenses:
-            print(f"  - {lic}")
+    if not is_quiet():
+        for u in sorted(users, key=lambda x: x.email):
+            print(f"{u.email or '(no email)'}  ({u.display_name})")
+            for lic in u.licenses:
+                print(f"  - {lic}")
 
     output = [
         {

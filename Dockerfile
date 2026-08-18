@@ -3,7 +3,7 @@ FROM python:3.12-slim
 WORKDIR /app
 
 COPY pyproject.toml ./
-COPY microsoft_licenses.py atlassian_licenses.py slack_licenses.py bitbucket_licenses.py snipe_it_sync.py exit_codes.py ./
+COPY microsoft_licenses.py atlassian_licenses.py slack_licenses.py bitbucket_licenses.py snipe_it_sync.py exit_codes.py quiet.py ./
 COPY docker-entrypoint.sh ./
 
 RUN pip install --no-cache-dir . \

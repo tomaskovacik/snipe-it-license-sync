@@ -18,6 +18,8 @@ import msal
 import requests
 from dotenv import load_dotenv
 
+from quiet import is_quiet
+
 load_dotenv()
 
 GRAPH_BASE = "https://graph.microsoft.com/v1.0"
@@ -138,10 +140,11 @@ def main() -> None:
     users = fetch_licensed_users(client, sku_map)
     print(f"  Found {len(users)} users with licenses\n")
 
-    for user in sorted(users, key=lambda u: u.email):
-        print(f"{user.email}  ({user.display_name})")
-        for sku in user.sku_part_numbers:
-            print(f"  - {sku}")
+    if not is_quiet():
+        for user in sorted(users, key=lambda u: u.email):
+            print(f"{user.email}  ({user.display_name})")
+            for sku in user.sku_part_numbers:
+                print(f"  - {sku}")
 
     # Also dump as JSON for use by other scripts
     output = [
