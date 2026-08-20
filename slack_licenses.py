@@ -86,9 +86,11 @@ class SlackClient:
 
 def fetch_licensed_users(client: SlackClient) -> list[LicensedUser]:
     """Return all active, non-bot workspace members with their license type."""
-    print("  Fetching workspace members...")
+    if not is_quiet():
+        print("  Fetching workspace members...")
     members = client.get_all_pages("users.list", result_key="members")
-    print(f"    {len(members)} total members (before filtering)")
+    if not is_quiet():
+        print(f"    {len(members)} total members (before filtering)")
 
     users: list[LicensedUser] = []
     for m in members:
@@ -114,11 +116,12 @@ def main() -> None:
 
     client = SlackClient(token)
 
-    print("Fetching Slack licensed users...")
+    if not is_quiet():
+        print("Fetching Slack licensed users...")
     users = fetch_licensed_users(client)
-    print(f"\nFound {len(users)} active users\n")
 
     if not is_quiet():
+        print(f"\nFound {len(users)} active users\n")
         for u in sorted(users, key=lambda x: x.email):
             print(f"{u.email}  ({u.display_name})")
             for lic in u.licenses:
@@ -135,7 +138,8 @@ def main() -> None:
     ]
     with open("slack_licenses.json", "w", encoding="utf-8") as f:
         json.dump(output, f, indent=2, ensure_ascii=False)
-    print(f"\nWrote slack_licenses.json ({len(output)} users)")
+    if not is_quiet():
+        print(f"\nWrote slack_licenses.json ({len(output)} users)")
 
 
 if __name__ == "__main__":

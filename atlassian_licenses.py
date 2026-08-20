@@ -176,7 +176,7 @@ def fetch_licensed_users(client: JiraClient) -> list[LicensedUser]:
     """Return all users with at least one Atlassian product license."""
     product_groups = fetch_product_groups(client)
     if not product_groups:
-        print("  Warning: no application roles found. Check token scopes.")
+        print("  WARNING: no application roles found. Check token scopes.")
         return []
 
     users: dict[str, LicensedUser] = {}
@@ -230,11 +230,12 @@ def main() -> None:
 
     client = JiraClient(site_url, user, token)
 
-    print("Fetching Atlassian licensed users...")
+    if not is_quiet():
+        print("Fetching Atlassian licensed users...")
     users = fetch_licensed_users(client)
-    print(f"\nFound {len(users)} users with at least one product license\n")
 
     if not is_quiet():
+        print(f"\nFound {len(users)} users with at least one product license\n")
         for u in sorted(users, key=lambda x: x.email):
             print(f"{u.email}  ({u.display_name})")
             for p in sorted(u.products):
@@ -251,7 +252,8 @@ def main() -> None:
     ]
     with open("atlassian_licenses.json", "w", encoding="utf-8") as f:
         json.dump(output, f, indent=2, ensure_ascii=False)
-    print(f"\nWrote atlassian_licenses.json ({len(output)} users)")
+    if not is_quiet():
+        print(f"\nWrote atlassian_licenses.json ({len(output)} users)")
 
 
 if __name__ == "__main__":

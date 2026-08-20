@@ -132,15 +132,16 @@ def main() -> None:
 
     client = GraphClient(tenant_id, client_id, client_secret)
 
-    print("Fetching SKU map...")
+    if not is_quiet():
+        print("Fetching SKU map...")
     sku_map = fetch_sku_map(client)
-    print(f"  Found {len(sku_map)} SKUs")
-
-    print("Fetching licensed users...")
+    if not is_quiet():
+        print(f"  Found {len(sku_map)} SKUs")
+        print("Fetching licensed users...")
     users = fetch_licensed_users(client, sku_map)
-    print(f"  Found {len(users)} users with licenses\n")
 
     if not is_quiet():
+        print(f"  Found {len(users)} users with licenses\n")
         for user in sorted(users, key=lambda u: u.email):
             print(f"{user.email}  ({user.display_name})")
             for sku in user.sku_part_numbers:
@@ -158,7 +159,8 @@ def main() -> None:
     ]
     with open("microsoft_licenses.json", "w", encoding="utf-8") as f:
         json.dump(output, f, indent=2, ensure_ascii=False)
-    print(f"\nWrote microsoft_licenses.json ({len(output)} users)")
+    if not is_quiet():
+        print(f"\nWrote microsoft_licenses.json ({len(output)} users)")
 
 
 if __name__ == "__main__":

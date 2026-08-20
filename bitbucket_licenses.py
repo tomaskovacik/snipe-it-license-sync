@@ -110,9 +110,11 @@ class JiraEmailResolver:
 def fetch_licensed_users(
     client: BitbucketClient, workspace: str, resolver: JiraEmailResolver
 ) -> list[LicensedUser]:
-    print(f"  Fetching members of workspace '{workspace}'...")
+    if not is_quiet():
+        print(f"  Fetching members of workspace '{workspace}'...")
     raw_members = fetch_workspace_members(client, workspace)
-    print(f"    {len(raw_members)} members")
+    if not is_quiet():
+        print(f"    {len(raw_members)} members")
 
     users = []
     for m in raw_members:
@@ -157,11 +159,12 @@ def main() -> None:
     client = BitbucketClient(bitbucket_user, bitbucket_token)
     resolver = JiraEmailResolver(site_url, jira_user, jira_token)
 
-    print("Fetching Bitbucket licensed users...")
+    if not is_quiet():
+        print("Fetching Bitbucket licensed users...")
     users = fetch_licensed_users(client, workspace, resolver)
-    print(f"\nFound {len(users)} workspace members\n")
 
     if not is_quiet():
+        print(f"\nFound {len(users)} workspace members\n")
         for u in sorted(users, key=lambda x: x.email):
             print(f"{u.email or '(no email)'}  ({u.display_name})")
             for lic in u.licenses:
@@ -178,7 +181,8 @@ def main() -> None:
     ]
     with open("bitbucket_licenses.json", "w", encoding="utf-8") as f:
         json.dump(output, f, indent=2, ensure_ascii=False)
-    print(f"\nWrote bitbucket_licenses.json ({len(output)} users)")
+    if not is_quiet():
+        print(f"\nWrote bitbucket_licenses.json ({len(output)} users)")
 
 
 if __name__ == "__main__":
