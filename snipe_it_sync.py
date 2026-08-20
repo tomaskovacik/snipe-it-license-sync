@@ -139,6 +139,17 @@ class SnipeITClient:
             raise RuntimeError(data.get("messages") or data)
         return data
 
+    def patch(self, path: str, json_body: dict) -> dict:
+        """Same error handling as put() — used for licenses/{id} updates."""
+        resp = self._session.patch(
+            f"{self._base_url}/api/v1/{path.lstrip('/')}", json=json_body
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        if isinstance(data, dict) and data.get("status") == "error":
+            raise RuntimeError(data.get("messages") or data)
+        return data
+
     def get_all_pages(self, path: str, params: dict | None = None) -> list[dict]:
         """Paginate using offset/limit and return all rows."""
         base_params = dict(params or {})
@@ -271,6 +282,20 @@ def build_diff(client: SnipeITClient) -> list[LicenseDiff]:
     return diffs
 
 
+def _provision_seat(client: SnipeITClient, license_id: int) -> list[int]:
+    """Grow the license's total seat count by 1 and return the resulting free
+    seat ids. These are cloud-vendor licenses (Jira/Slack/etc.) — if a source
+    system says someone holds one, Snipe-IT is simply out of date, not over
+    budget, so we grow it to match rather than refuse the checkout. Snipe-IT
+    auto-creates a matching LicenseSeat row when 'seats' is PATCHed higher."""
+    current = client.get(f"licenses/{license_id}")
+    new_total = current["seats"] + 1
+    client.patch(f"licenses/{license_id}", {"seats": new_total})
+    print(f"    Provisioned 1 new seat for license {license_id} (total now {new_total})")
+    _, free_seat_ids = fetch_license_seats(client, license_id)
+    return free_seat_ids
+
+
 def _is_dry_run() -> bool:
     raw = os.environ.get("SNIPE_IT_DRY_RUN", "true").strip().lower()
     return raw not in ("false", "0", "no")
@@ -289,6 +314,23 @@ def apply_diff(client: SnipeITClient, diffs: list[LicenseDiff]) -> dict[str, dic
         checked_out, checked_in, errors = [], [], []
         free_seats = list(d.free_seat_ids)
 
+        # Check in before checking out: a straight seat swap (one leaver, one
+        # joiner) should reuse the freed seat instead of provisioning a new
+        # one, so the license's total seat count only grows on real net
+        # additions.
+        for email, seat_id in d.to_checkin:
+            try:
+                client.put(
+                    f"licenses/{d.license_id}/seats/{seat_id}",
+                    {"assigned_to": None, "asset_id": None, "note": note},
+                )
+                print(f"  Checked in {email} <- {d.license_name} (seat {seat_id})")
+                checked_in.append(email)
+                free_seats.append(seat_id)
+            except Exception as e:
+                print(f"  ERROR checking in {email} <- {d.license_name}: {e}")
+                errors.append({"email": email, "action": "checkin", "error": str(e)})
+
         for email in d.to_checkout:
             user_id = email_to_user_id.get(email)
             if user_id is None:
@@ -297,10 +339,13 @@ def apply_diff(client: SnipeITClient, diffs: list[LicenseDiff]) -> dict[str, dic
                 errors.append({"email": email, "action": "checkout", "error": msg})
                 continue
             if not free_seats:
-                msg = "no free seats left"
-                print(f"  SKIP checkout {email} -> {d.license_name}: {msg}")
-                errors.append({"email": email, "action": "checkout", "error": msg})
-                continue
+                try:
+                    free_seats = _provision_seat(client, d.license_id)
+                except Exception as e:
+                    msg = f"could not provision a new seat: {e}"
+                    print(f"  ERROR checkout {email} -> {d.license_name}: {msg}")
+                    errors.append({"email": email, "action": "checkout", "error": msg})
+                    continue
             seat_id = free_seats.pop()
             try:
                 client.put(
@@ -312,18 +357,6 @@ def apply_diff(client: SnipeITClient, diffs: list[LicenseDiff]) -> dict[str, dic
             except Exception as e:
                 print(f"  ERROR checking out {email} -> {d.license_name}: {e}")
                 errors.append({"email": email, "action": "checkout", "error": str(e)})
-
-        for email, seat_id in d.to_checkin:
-            try:
-                client.put(
-                    f"licenses/{d.license_id}/seats/{seat_id}",
-                    {"assigned_to": None, "asset_id": None, "note": note},
-                )
-                print(f"  Checked in {email} <- {d.license_name} (seat {seat_id})")
-                checked_in.append(email)
-            except Exception as e:
-                print(f"  ERROR checking in {email} <- {d.license_name}: {e}")
-                errors.append({"email": email, "action": "checkin", "error": str(e)})
 
         results[d.license_name] = {
             "checked_out": checked_out,

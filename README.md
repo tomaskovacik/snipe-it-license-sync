@@ -172,6 +172,8 @@ If the same person appears under two different email addresses across systems (e
 
 `SNIPE_IT_DRY_RUN` defaults to `true` — the script only reports the diff, no Snipe-IT writes happen. Set it to `false` to actually perform the checkout/checkin calls. Because this writes to a shared system, test with a small diff first (or check a couple of seats in the Snipe-IT UI right after a run) before trusting it for a full batch.
 
+Within a license, check-ins are applied before check-outs, so a straight seat swap (one leaver, one joiner) reuses the freed seat instead of growing the license. If a checkout still has no free seat after that (a genuine net increase in license holders — these are cloud-vendor licenses, so the source system is the ground truth), the license's seat count in Snipe-IT is increased by 1 to match, rather than skipping the checkout.
+
 ---
 
 ## Running
