@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "snipe-it-integration"
-version = "0.3.1"
+version = "0.3.2"
 description = "Sync Microsoft 365, Atlassian, Bitbucket, and Slack license assignments to Snipe-IT."
 requires-python = ">=3.10"
 dependencies = [
