@@ -450,6 +450,15 @@ if __name__ == "__main__":
             "check network/VPN connectivity."
         )
         sys.exit(EXIT_CRITICAL)
+    except requests.exceptions.JSONDecodeError:
+        print(
+            f"CRITICAL: got a non-JSON response from "
+            f"{os.environ.get('SNIPE_IT_URL', '(SNIPE_IT_URL not set)')} — "
+            "that host answered but isn't serving the Snipe-IT API (wrong "
+            "SNIPE_IT_URL, DNS hijack/parked-domain page, or a proxy/error "
+            "page in front of it)."
+        )
+        sys.exit(EXIT_CRITICAL)
     except KeyError as e:
         print(f"UNKNOWN: missing required .env variable: {e}")
         sys.exit(EXIT_UNKNOWN)
