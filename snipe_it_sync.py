@@ -433,24 +433,32 @@ def main() -> int:
     if not is_quiet():
         print("\nWrote snipe_it_diff.json")
 
+    # The leading blank line separates the status line from the diff/apply
+    # output above it in normal mode — but under QUIET, when there's no diff
+    # (nothing printed yet), that blank line would be the *first* line of
+    # output, becoming a stray literal \n prefix once NAGIOS mode collapses
+    # this into single-line output. Only add it when there's something above
+    # to separate from.
+    lead = "\n" if not is_quiet() else ""
+
     if apply_results is not None:
         error_count = sum(len(r["errors"]) for r in apply_results.values())
         if error_count:
-            print(f"\nCRITICAL: {error_count} error(s) applying changes to Snipe-IT")
+            print(f"{lead}CRITICAL: {error_count} error(s) applying changes to Snipe-IT")
             return EXIT_CRITICAL
-        print("\nOK: changes applied to Snipe-IT")
+        print(f"{lead}OK: changes applied to Snipe-IT")
         return EXIT_OK
 
     if any_changes:
         checkout_count = sum(len(d.to_checkout) for d in diffs)
         checkin_count = sum(len(d.to_checkin) for d in diffs)
         print(
-            f"\nWARNING: Snipe-IT out of sync — {checkout_count} checkout(s), "
+            f"{lead}WARNING: Snipe-IT out of sync — {checkout_count} checkout(s), "
             f"{checkin_count} checkin(s) needed"
         )
         return EXIT_WARNING
 
-    print("\nOK: Snipe-IT is in sync")
+    print(f"{lead}OK: Snipe-IT is in sync")
     return EXIT_OK
 
 

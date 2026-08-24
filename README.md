@@ -231,6 +231,12 @@ docker run --rm --env-file /etc/snipe-it-sync/.env -e NAGIOS=true snipe-it-integ
 
 Wire that straight up as a Nagios `check_command` — its stdout is already in the format Nagios expects.
 
+### Example: `check_command` wrapper script
+
+See [`examples/nagios/license_check.sh`](examples/nagios/license_check.sh) for a minimal wrapper that pulls the image and runs it with `NAGIOS=true`, suitable as a Nagios `check_command`.
+
+**Pin the image instead of using `:latest` in production.** The example pulls `:latest` for simplicity, but that's unsafe outside of trying it out: the container reads your Snipe-IT/M365/Atlassian/Slack/Bitbucket credentials via `--env-file`, so a compromised or malicious image pushed to that tag would run with access to all of them the very next time your check fires. Pin to an exact version *and* its content digest (`ghcr.io/tomaskovacik/snipe-it-license-sync:vX.Y.Z@sha256:<digest>`), and manage the bump with a tool like [Renovate](https://docs.renovatebot.com/), configured with a `minimumReleaseAge` deferral (e.g. 14 days) — that gives a compromised release a window to be caught and pulled before your infrastructure ever actually runs it.
+
 ### Example output
 
 ```
