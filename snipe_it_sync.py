@@ -233,11 +233,14 @@ def load_source_licenses() -> dict[str, set[str]]:
 
 
 def build_diff(client: SnipeITClient) -> list[LicenseDiff]:
-    print("Fetching Snipe-IT licenses...")
+    if not is_quiet():
+        print("Fetching Snipe-IT licenses...")
     license_ids_by_name = fetch_snipeit_license_ids(client)
-    print(f"  {len(license_ids_by_name)} licenses found")
+    if not is_quiet():
+        print(f"  {len(license_ids_by_name)} licenses found")
 
-    print("Loading source license data...")
+    if not is_quiet():
+        print("Loading source license data...")
     product_emails = load_source_licenses()
 
     # Multiple product keys can map to the same Snipe-IT license (e.g. Slack's
@@ -312,7 +315,8 @@ def apply_diff(client: SnipeITClient, diffs: list[LicenseDiff]) -> dict[str, dic
     """Actually perform the checkout/checkin calls for each diff. Returns
     per-license results (checked_out / checked_in / errors) for the JSON
     output, so a failed item doesn't stop the rest of the run."""
-    print("\nApplying changes...")
+    if not is_quiet():
+        print("\nApplying changes...")
     email_to_user_id = fetch_snipeit_user_ids_by_email(client)
     note = "Synced by snipe_it_sync.py"
 
@@ -385,12 +389,14 @@ def main() -> int:
         if dry_run
         else "APPLY MODE — real checkout/checkin calls will be made"
     )
-    print(f"Building Snipe-IT license diff ({mode_desc})...\n")
+    if not is_quiet():
+        print(f"Building Snipe-IT license diff ({mode_desc})...\n")
     diffs = build_diff(client)
 
-    print("\n" + "=" * 60)
-    print("DRY RUN SUMMARY" if dry_run else "PLANNED CHANGES")
-    print("=" * 60)
+    if not is_quiet():
+        print("\n" + "=" * 60)
+        print("DRY RUN SUMMARY" if dry_run else "PLANNED CHANGES")
+        print("=" * 60)
 
     any_changes = False
     for d in diffs:
@@ -408,7 +414,7 @@ def main() -> int:
             for email, _seat_id in d.to_checkin:
                 print(f"    - {email}")
 
-    if not any_changes:
+    if not any_changes and not is_quiet():
         print("\nNo changes needed — Snipe-IT is already in sync.")
 
     apply_results = apply_diff(client, diffs) if (any_changes and not dry_run) else None
@@ -424,7 +430,8 @@ def main() -> int:
     ]
     with open("snipe_it_diff.json", "w", encoding="utf-8") as f:
         json.dump(output, f, indent=2, ensure_ascii=False)
-    print("\nWrote snipe_it_diff.json")
+    if not is_quiet():
+        print("\nWrote snipe_it_diff.json")
 
     if apply_results is not None:
         error_count = sum(len(r["errors"]) for r in apply_results.values())

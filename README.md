@@ -219,6 +219,18 @@ The last line of stdout is a short status line (`OK: ...` / `WARNING: ...` / `CR
 
 For a monitoring run, also set `QUIET=true` — each fetch script then prints nothing but warnings/errors, and `snipe_it_sync.py` prints only the diff and the final status line.
 
+### Running under Nagios (`NAGIOS=true`)
+
+Many Nagios transports (and Nagios itself, depending on config) only render the plugin's output correctly if a multi-line status is pre-encoded as a single line with literal `\n` sequences marking line breaks, rather than real newlines — Nagios then splits on those into short vs. long output for the web UI and `$LONGSERVICEOUTPUT$` in notifications.
+
+Set `NAGIOS=true` (implies `QUIET=true`) and the Docker entrypoint handles this for you: it runs the fetch scripts and `snipe_it_sync.py` as normal, then collapses the combined stdout into that single-line `\n`-escaped form and exits with the same status code. No wrapper script needed:
+
+```bash
+docker run --rm --env-file /etc/snipe-it-sync/.env -e NAGIOS=true snipe-it-integration
+```
+
+Wire that straight up as a Nagios `check_command` — its stdout is already in the format Nagios expects.
+
 ### Example output
 
 ```
