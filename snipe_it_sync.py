@@ -244,7 +244,14 @@ def build_diff(client: SnipeITClient) -> list[LicenseDiff]:
     # owner/admin/member/guest-* roles all map to one "Slack" license) — union
     # their wanted emails BEFORE diffing, so a person counted under one role
     # key isn't treated as a stray checkin when diffed under a different one.
-    license_wanted: dict[str, set[str]] = {}
+    # Seed every configured license name with an empty set up front: if a
+    # product key has zero holders in this run (the last person with that
+    # license was just removed), it's absent from product_emails entirely —
+    # without this seed the license would never be diffed against Snipe-IT at
+    # all, so the last leaver's seat would stay checked out forever.
+    license_wanted: dict[str, set[str]] = {
+        license_name: set() for license_name in PRODUCT_TO_SNIPEIT_LICENSE.values()
+    }
     for product_key, wanted_emails in product_emails.items():
         license_name = PRODUCT_TO_SNIPEIT_LICENSE.get(product_key)
         if license_name is None:
