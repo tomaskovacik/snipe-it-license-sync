@@ -1,0 +1,36 @@
+# Dependabot version updates.
+# https://docs.github.com/code-security/dependabot/dependabot-version-updates
+version: 2
+updates:
+  # Python dependencies. Source of truth is pyproject.toml + uv.lock; the three
+  # runtime deps (msal, requests, python-dotenv) plus the dev dep (pytest) are
+  # updated here. After a bump, scripts/regen-locks.sh refreshes
+  # requirements*.txt (the CI "lockfiles" check enforces this).
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    groups:
+      python-dependencies:
+        patterns:
+          - "*"
+
+  # Base image in the Dockerfile (python:3.12-slim).
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+
+  # Actions pinned by commit SHA in .github/workflows/*.yml
+  # (docker/*, astral-sh/setup-uv, actions/*).
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    groups:
+      github-actions:
+        patterns:
+          - "*"
