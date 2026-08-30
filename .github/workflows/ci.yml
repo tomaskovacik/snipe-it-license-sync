@@ -20,6 +20,26 @@ jobs:
       - name: Build Docker image
         run: docker build -t snipe-it-license-sync .
 
+  lockfiles:
+    # uv.lock is the source of truth; requirements*.txt are exported from it and
+    # committed so pip can install with --require-hashes. Fail if they drift
+    # (e.g. after a Dependabot bump that touched only uv.lock).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          # Pin uv so `uv export` output matches the committed files byte for byte.
+          version: "0.12.7"
+
+      - name: Verify lock artifacts are up to date
+        run: |
+          uv lock --check
+          ./scripts/regen-locks.sh
+          git diff --exit-code -- uv.lock requirements.txt requirements-dev.txt \
+            || { echo "::error::lock artifacts are stale — run scripts/regen-locks.sh and commit"; exit 1; }
+
   test:
     runs-on: ubuntu-latest
     steps:
@@ -30,9 +50,11 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
+        # requirements-dev.txt is fully pinned with hashes (generated from
+        # uv.lock); --require-hashes makes the install reproducible and
+        # --only-binary :all: keeps pip from running any package setup script.
         run: |
-          python -m pip install --upgrade pip
-          pip install -e .
+          pip install --require-hashes --only-binary :all: -r requirements-dev.txt
 
       - name: Compile check
         run: python -m py_compile *.py
@@ -40,8 +62,7 @@ jobs:
       - name: Run tests
         run: |
           if find . -maxdepth 2 \( -name "test_*.py" -o -name "*_test.py" \) | grep -q .; then
-            pip install pytest
-            pytest -v
+            PYTHONPATH=. pytest -v
           else
             echo "No tests found yet — skipping pytest run."
           fi
