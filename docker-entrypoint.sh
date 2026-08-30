@@ -8,7 +8,7 @@ cd "${OUTPUT_DIR:-/data}"
 
 # NAGIOS=true implies QUIET=true — Nagios only wants the diff summary and
 # final status line, not each fetch script's own progress output.
-if [ "${NAGIOS:-false}" = "true" ]; then
+if [[ "${NAGIOS:-false}" == "true" ]]; then
     export QUIET=true
 fi
 
@@ -24,7 +24,7 @@ run_scripts() {
     python -m snipe_it_sync
 }
 
-if [ "${NAGIOS:-false}" = "true" ]; then
+if [[ "${NAGIOS:-false}" == "true" ]]; then
     # Nagios (and most transports in front of it) treat the plugin's stdout
     # as a single-line status unless multi-line output is pre-encoded with
     # literal "\n" sequences instead of real newlines — Nagios itself then

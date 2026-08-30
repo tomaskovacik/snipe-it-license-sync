@@ -57,7 +57,7 @@ jobs:
           pip install --require-hashes --only-binary :all: -r requirements-dev.txt
 
       - name: Compile check
-        run: python -m py_compile *.py
+        run: python -m py_compile ./*.py
 
       - name: Run tests
         run: |
