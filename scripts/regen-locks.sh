@@ -13,10 +13,11 @@ cd "$(dirname "$0")/.."
 
 uv lock
 
-uv export --frozen --no-dev --no-emit-project \
+# --no-annotate keeps the output stable across uv versions (no "# via" lines).
+uv export --frozen --no-dev --no-emit-project --no-annotate \
   --format requirements-txt -o requirements.txt
 
-uv export --frozen --no-emit-project \
+uv export --frozen --no-emit-project --no-annotate \
   --format requirements-txt -o requirements-dev.txt
 
 echo "Regenerated uv.lock, requirements.txt, requirements-dev.txt"
