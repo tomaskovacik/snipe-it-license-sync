@@ -15,13 +15,25 @@ fi
 # -m runs each module as __main__ (unlike import+call), so the
 # `if __name__ == "__main__":` exit-code handling in each script actually
 # fires here too, not just when run as `python microsoft_licenses.py`.
+#
+# Returns the worst status across every script (0 OK < 1 WARNING < 2
+# CRITICAL < 3 UNKNOWN). A fetch script that returns >=2 (host unreachable,
+# misconfigured) aborts the run — syncing against half-fetched source data
+# would check people in who are actually still licensed. A soft WARNING
+# (e.g. one unresolvable email) does not abort, but is carried through so
+# it isn't lost behind snipe_it_sync's own "OK".
 run_scripts() {
-    set -e
-    python -m microsoft_licenses
-    python -m atlassian_licenses
-    python -m bitbucket_licenses
-    python -m slack_licenses
-    python -m snipe_it_sync
+    local worst=0 rc
+    for mod in microsoft_licenses atlassian_licenses bitbucket_licenses slack_licenses; do
+        rc=0
+        python -m "$mod" || rc=$?
+        [[ "$rc" -ge 2 ]] && return "$rc"
+        [[ "$rc" -gt "$worst" ]] && worst=$rc
+    done
+    rc=0
+    python -m snipe_it_sync || rc=$?
+    [[ "$rc" -gt "$worst" ]] && worst=$rc
+    return "$worst"
 }
 
 if [[ "${NAGIOS:-false}" == "true" ]]; then
