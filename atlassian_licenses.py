@@ -19,6 +19,7 @@ from dataclasses import dataclass, field
 import requests
 from dotenv import load_dotenv
 
+from exit_codes import EXIT_WARNING
 from quiet import is_quiet
 
 load_dotenv()
@@ -223,7 +224,7 @@ def fetch_licensed_users(client: JiraClient) -> list[LicensedUser]:
     return list(users.values())
 
 
-def main() -> None:
+def main() -> int | None:
     site_url = os.environ["ATLASSIAN_SITE_URL"]
     user = os.environ["ATLASSIAN_USER"]
     token = os.environ["ATLASSIAN_API_TOKEN"]
@@ -254,6 +255,20 @@ def main() -> None:
         json.dump(output, f, indent=2, ensure_ascii=False)
     if not is_quiet():
         print(f"\nWrote atlassian_licenses.json ({len(output)} users)")
+
+    # A user whose email Jira masks is written to the JSON with an empty
+    # email, so snipe_it_sync.py silently drops them from the diff — their
+    # Snipe-IT seat then never gets managed. Report WARNING so the run
+    # doesn't come back clean while someone is being skipped.
+    unresolved = [u for u in users if not u.email]
+    if unresolved:
+        who = ", ".join(f"{u.display_name} ({u.account_id})" for u in unresolved)
+        print(
+            f"WARNING: {len(unresolved)} Atlassian user(s) skipped — email "
+            f"unresolved, add to ATLASSIAN_ACCOUNT_EMAIL_OVERRIDES: {who}"
+        )
+        return EXIT_WARNING
+    return None
 
 
 if __name__ == "__main__":

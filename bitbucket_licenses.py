@@ -30,6 +30,7 @@ from dataclasses import dataclass, field
 import requests
 from dotenv import load_dotenv
 
+from exit_codes import EXIT_WARNING
 from quiet import is_quiet
 
 load_dotenv()
@@ -143,7 +144,7 @@ REQUIRED_ENV_VARS = [
 ]
 
 
-def main() -> None:
+def main() -> int | None:
     missing = [v for v in REQUIRED_ENV_VARS if not os.environ.get(v)]
     if missing:
         raise RuntimeError(f"missing required .env variable(s): {', '.join(missing)}")
@@ -183,6 +184,16 @@ def main() -> None:
         json.dump(output, f, indent=2, ensure_ascii=False)
     if not is_quiet():
         print(f"\nWrote bitbucket_licenses.json ({len(output)} users)")
+
+    # Members with no resolvable email are written with an empty email and
+    # then dropped by snipe_it_sync.py — report WARNING so the run doesn't
+    # look clean while someone is being skipped.
+    unresolved = [u for u in users if not u.email]
+    if unresolved:
+        who = ", ".join(f"{u.display_name} ({u.account_id})" for u in unresolved)
+        print(f"WARNING: {len(unresolved)} Bitbucket user(s) skipped — email unresolved: {who}")
+        return EXIT_WARNING
+    return None
 
 
 if __name__ == "__main__":

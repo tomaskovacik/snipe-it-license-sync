@@ -226,9 +226,11 @@ All four use **email address** as the common key for matching users across syste
 | Code | Meaning |
 |---|---|
 | `0` (OK) | Snipe-IT is in sync (dry run, no diff), or apply mode ran with no errors |
-| `1` (WARNING) | Diff found in dry-run mode — some license(s) need checkout/checkin |
+| `1` (WARNING) | Diff found in dry-run mode — some license(s) need checkout/checkin; **or** a fetch script finished but couldn't resolve every user's email (those users are skipped — add them to `ATLASSIAN_ACCOUNT_EMAIL_OVERRIDES`) |
 | `2` (CRITICAL) | Snipe-IT unreachable (network/VPN down), or apply mode hit errors |
 | `3` (UNKNOWN) | Missing/invalid `.env` config or an unexpected error |
+
+When run through the Docker entrypoint (including `NAGIOS=true`), the container exits with the **worst** code across all fetch scripts and `snipe_it_sync.py` — so a fetch-script `WARNING` isn't hidden behind a later `OK: Snipe-IT is in sync`. A fetch script exiting `CRITICAL`/`UNKNOWN` aborts the run before the sync, since diffing against half-fetched source data would check people in who are actually still licensed.
 
 The last line of stdout is a short status line (`OK: ...` / `WARNING: ...` / `CRITICAL: ...` / `UNKNOWN: ...`) suitable as the check's summary output. Run it with `SNIPE_IT_DRY_RUN=true` (the default) for monitoring — it only ever reports drift, never mutates Snipe-IT.
 
@@ -238,7 +240,7 @@ For a monitoring run, also set `QUIET=true` — each fetch script then prints no
 
 Many Nagios transports (and Nagios itself, depending on config) only render the plugin's output correctly if a multi-line status is pre-encoded as a single line with literal `\n` sequences marking line breaks, rather than real newlines — Nagios then splits on those into short vs. long output for the web UI and `$LONGSERVICEOUTPUT$` in notifications.
 
-Set `NAGIOS=true` (implies `QUIET=true`) and the Docker entrypoint handles this for you: it runs the fetch scripts and `snipe_it_sync.py` as normal, then collapses the combined stdout into that single-line `\n`-escaped form and exits with the same status code. No wrapper script needed:
+Set `NAGIOS=true` (implies `QUIET=true`) and the Docker entrypoint handles this for you: it runs the fetch scripts and `snipe_it_sync.py` as normal, then collapses the combined stdout into that single-line `\n`-escaped form and exits with the worst status code across all of them. No wrapper script needed:
 
 ```bash
 docker run --rm --env-file /etc/snipe-it-sync/.env -e NAGIOS=true snipe-it-integration
