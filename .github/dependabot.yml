@@ -4,9 +4,10 @@ version: 2
 updates:
   # Python dependencies. Source of truth is pyproject.toml + uv.lock; the three
   # runtime deps (msal, requests, python-dotenv) plus the dev dep (pytest) are
-  # updated here. After a bump, scripts/regen-locks.sh refreshes
-  # requirements*.txt (the CI "lockfiles" check enforces this).
-  - package-ecosystem: "pip"
+  # updated here. Dependabot updates uv.lock directly; after merging,
+  # scripts/regen-locks.sh refreshes requirements*.txt (the CI "lockfiles"
+  # check enforces this).
+  - package-ecosystem: "uv"
     directory: "/"
     schedule:
       interval: "weekly"
