@@ -3,6 +3,7 @@ name: CI
 on:
   push:
   pull_request:
+  workflow_dispatch:
 
 # Least-privilege default: the GITHUB_TOKEN this workflow gets only needs to
 # read repo contents to check out code and build. Keeping this minimal (no
