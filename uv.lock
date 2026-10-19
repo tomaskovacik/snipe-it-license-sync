@@ -507,6 +507,7 @@ name = "snipe-it-integration"
 version = "0.3.7"
 source = { editable = "." }
 dependencies = [
+    { name = "certifi" },
     { name = "msal" },
     { name = "python-dotenv" },
     { name = "requests" },
@@ -519,6 +520,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "certifi", specifier = ">=2024.7.4" },
     { name = "msal", specifier = ">=1.28.0" },
     { name = "python-dotenv", specifier = ">=1.0.0" },
     { name = "requests", specifier = ">=2.32.0" },

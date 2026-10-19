@@ -1,0 +1,45 @@
+name: Weekly lock upgrade
+
+# Dependabot only tracks direct dependencies; this refreshes the whole of
+# uv.lock (transitive packages included) and opens a PR if anything changed.
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+jobs:
+  upgrade:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          # Keep in sync with ci.yml and the Dockerfile.
+          version: "0.12.7"
+
+      - run: uv lock --upgrade
+
+      - id: pr
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        with:
+          branch: automation/lock-upgrade
+          commit-message: "Upgrade uv.lock"
+          title: "Upgrade uv.lock (weekly)"
+          body: |
+            Automated `uv lock --upgrade`: refreshes all locked packages,
+            including transitive dependencies Dependabot does not track.
+          add-paths: uv.lock
+
+      # PRs/pushes made with GITHUB_TOKEN don't trigger workflows, but
+      # workflow_dispatch is exempt; run CI on the branch explicitly.
+      - name: Run CI on the PR branch
+        if: steps.pr.outputs.pull-request-operation == 'created' || steps.pr.outputs.pull-request-operation == 'updated'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run ci.yml --ref automation/lock-upgrade

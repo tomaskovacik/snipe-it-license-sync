@@ -11,6 +11,8 @@ dependencies = [
   "msal>=1.28.0",
   "requests>=2.32.0",
   "python-dotenv>=1.0.0",
+  # Transitive via requests; declared so Dependabot tracks the CA bundle.
+  "certifi>=2024.7.4",
 ]
 
 [dependency-groups]
