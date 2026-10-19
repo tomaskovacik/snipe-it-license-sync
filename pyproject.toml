@@ -14,7 +14,7 @@ dependencies = [
 ]
 
 [dependency-groups]
-# Test-only tooling. Kept locked (uv.lock) and hash-pinned (requirements-dev.txt)
+# Test-only tooling. Kept locked (uv.lock)
 # so CI resolves the same versions every run.
 dev = [
   "pytest>=8.0.0",
