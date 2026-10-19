@@ -1,0 +1,54 @@
+name: Dependabot lock sync
+
+# Dependabot sometimes edits requirements*.txt without touching uv.lock (or
+# vice versa), which fails the CI "lockfiles" check. Regenerate all lock
+# artifacts on Dependabot branches and push the fix, so nobody has to.
+#
+# pull_request_target gives a write-capable token for Dependabot PRs; the job
+# only runs for dependabot[bot] and only executes scripts/regen-locks.sh.
+on:
+  pull_request_target:
+    paths:
+      - pyproject.toml
+      - uv.lock
+      - requirements.txt
+      - requirements-dev.txt
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  sync:
+    if: github.event.pull_request.user.login == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          # Must match the version pinned in ci.yml.
+          version: "0.12.7"
+
+      - name: Regenerate lock artifacts
+        run: ./scripts/regen-locks.sh
+
+      - name: Commit and re-run CI
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          if git diff --quiet -- uv.lock requirements.txt requirements-dev.txt; then
+            echo "Lock artifacts already in sync."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add uv.lock requirements.txt requirements-dev.txt
+          git commit -m "Regenerate lock artifacts from uv.lock"
+          git push origin "HEAD:${BRANCH}"
+          # Pushes made with GITHUB_TOKEN don't trigger workflows, but
+          # workflow_dispatch is exempt; run CI on the new commit explicitly.
+          gh workflow run ci.yml --ref "${BRANCH}"
