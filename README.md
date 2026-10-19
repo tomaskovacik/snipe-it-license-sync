@@ -15,17 +15,15 @@ cp .env.example .env
 
 ### Dependencies and lock files
 
-`pyproject.toml` declares the direct dependencies. `uv.lock` is the pinned
-resolution (source of truth); `requirements.txt` (runtime) and
-`requirements-dev.txt` (runtime + `pytest`) are hash-pinned exports of it used
-by the Docker image and CI. After changing a dependency — or applying a
-Dependabot bump — run `./scripts/regen-locks.sh` and commit the result; CI
-fails if these fall out of sync.
+`pyproject.toml` declares the direct dependencies and `uv.lock` is the pinned,
+hash-verified resolution. The Docker image and CI install from it with
+`uv sync --frozen`; Dependabot updates `uv.lock` directly. After editing
+dependencies by hand, run `uv lock` and commit the result.
 
-For a reproducible, hash-verified install:
+For a local install:
 
 ```bash
-.venv/bin/pip install --require-hashes --only-binary :all: -r requirements.txt
+uv sync --frozen
 ```
 
 ---
